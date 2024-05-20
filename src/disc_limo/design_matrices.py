@@ -3,6 +3,9 @@
 
 import numpy as np
 from numpy.typing import NDArray
+from scipy import sparse
+
+from .convolution_matrix import get_H_sparse_entries
 
 # Constants
 DELTA_OMEGA = 0.5 * np.pi  # Frequency spacing for Fourier basis functions
@@ -33,3 +36,49 @@ def fourier_design_matrix(
         else:
             design_matrix[:, j] = np.cos(omega * t_vals)
     return design_matrix, omegas
+
+
+def fourier_design_matrix_2D(
+    n_x: int, n_y: int, n_fourier_x: int, n_fourier_y: int
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Create 2D Fourier design matrix as Kronecker product of two 1D matrices."""
+    # 1D Fourier design matrices
+    fourier_design_x, freqs_x = fourier_design_matrix(n_x, n_fourier_x)
+    fourier_design_y, freqs_y = fourier_design_matrix(n_y, n_fourier_y)
+
+    # Create 2D Fourier design matrices
+    fourier_design_2D = np.kron(fourier_design_x, fourier_design_y)
+    freqs_2D = np.sqrt(np.add.outer(freqs_x**2, freqs_y**2))
+    freqs_2D_vector = freqs_2D.flatten()
+
+    return fourier_design_2D, freqs_2D_vector
+
+
+def full_design_and_convolution_matrices(
+    n_x: int, n_y: int, n_fourier: int, kernel_array: NDArray[np.float64]
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    """
+    Create full design matrix including convolution with the beam. This is calculated as
+    A = H @ Axy
+    where A is the full design matrix, H is the convolution matrix and Axy is the 2D Fourier
+    design matrix calculated as the Kronecker product of two 1D Fourier design matrices.
+    """
+    # Get convolution matrix
+    # TODO: Remove use of sparse matrices since it isn't needed
+    values, row_indicies, column_indicies, *_ = get_H_sparse_entries(
+        n_x, n_y, kernel_array
+    )
+    convolution_matrix = sparse.csr_array(
+        (values, (row_indicies, column_indicies)), shape=(n_x * n_y, n_x * n_y)
+    )
+    convolution_matrix = convolution_matrix.todense()
+
+    # Fourier Design matrix, and frequencies of Fourier modes for feature weighting
+    fourier_design_2D, freqs_2D_vector = fourier_design_matrix_2D(
+        n_x, n_y, n_fourier, n_fourier
+    )
+
+    # Include convolution in full design matrix
+    design_matrix = convolution_matrix @ fourier_design_2D
+
+    return design_matrix, freqs_2D_vector, convolution_matrix

@@ -9,30 +9,17 @@ import numpy as np
 from astropy.convolution import Gaussian2DKernel
 from astropy.io import fits
 from numpy.typing import NDArray
-from scipy import sparse
-from scipy.linalg import lu
 from tqdm import tqdm
 
-from .convolution_matrix import get_H_sparse_entries
 from .cube_io import estimate_rms, read_beam, read_nspaxels
-from .design_matrices import fourier_design_matrix
-from .training import (
-    solve,
-    train_feature_weighted_gls,
-    weight_function_exp,
-    weight_function_mat32,
-)
+from .design_matrices import full_design_and_convolution_matrices
+from .training import calc_weight_covariances_and_matrices, train_feature_weighted_gls
 
 # Named tuple for saving calculated matrices for re-use in fitting
 Setup = namedtuple(
     "Setup",
     (
-        "convolution_filter "
-        "fourier_design "
         "full_design "
-        "frequencies "
-        "lambda_diagonal "
-        "data_covariances "
         "weights_covariances "
         "AT_Cinv "
         "AT_Cinv_A "
@@ -57,71 +44,26 @@ def setup_fit(
     on the best fits).
     """
 
-    # Get convolution matrix
-    # TODO: create get_convolution matrix function and move to design_matrices.py to allow for in-place re-creation
-    values, row_indicies, column_indicies, *_ = get_H_sparse_entries(
-        n_x, n_y, beam_kernel.array
-    )
-    convolution_matrix = sparse.csr_array(
-        (values, (row_indicies, column_indicies)), shape=(n_x * n_y, n_x * n_y)
-    )
-    convolution_matrix = convolution_matrix.todense()
-
-    # 1D Fourier design matrices
-    fourier_design_x, freqs_x = fourier_design_matrix(n_x, n_fourier)
-    fourier_design_y, freqs_y = fourier_design_matrix(n_y, n_fourier)
-
-    # Create 2D Fourier design matrices
-    fourier_design_2D = np.kron(fourier_design_x, fourier_design_y)
-    freqs_2D = np.sqrt(np.add.outer(freqs_x**2, freqs_y**2))
-    freqs_2D_vector = freqs_2D.flatten()
-
-    # Include convolution in full design matrix
-    design = convolution_matrix @ fourier_design_2D
-
-    # Values along main diagonal of regularisation weighting matrix lambda
-    lambda_diagonal = (
-        lambda_coefficient
-        / weight_function_exp(freqs_2D_vector, weighting_width_inverse) ** 2
+    # Get design matrix, fourier mode frequencies, convolution matrix
+    design, freqs_2D_vector, convolution_matrix = full_design_and_convolution_matrices(
+        n_x, n_y, n_fourier, beam_kernel.array
     )
 
-    # Covariance matrix
-    # TODO: move to training.py in a function
-    data_covariances = rms**2 * convolution_matrix / convolution_matrix.max()
-
-    # ## Calculate variances on weights for fits
-    # First calculate A.T @ C^-1 @ A + Lambda
-    # Setting Gamma = A.T @ C^-1 implies Gamma @ C = A.T
-    # Tansposing both sides gives C.T @ Gamma.T = A
-    # Solving that with lst sqrs then transposing gives us Gamma aka A.T @ C^-1
-    # AT_Cinv_A = design.T @ np.linalg.lstsq(data_covariances, design, rcond=RCOND)[0]
-    # AT_Cinv = np.linalg.lstsq(data_covariances.T, design, rcond=RCOND)[0].T
-    AT_Cinv = solve(data_covariances.T, design).T
-    AT_Cinv_A = AT_Cinv @ design
-    # Add feature weighting constraint
-    AT_Cinv_A[np.diag_indices(n_fourier**2)] += lambda_diagonal
-    # Invert using an PLU decomposition
-    permutation, l_factor, u_factor = lu(AT_Cinv_A)
-    # First solve L @ y = P.T @ I
-    # y = np.linalg.lstsq(l_factor, permutation.T, rcond=RCOND)[0]
-    y = solve(l_factor, permutation.T)
-    # Now solve U @ x = y which gives us the inverse of A.T @ C^-1 @ A + Lambda
-    # weights_covariances = np.linalg.lstsq(u_factor, y, rcond=RCOND)[0]
-    weights_covariances = solve(u_factor, y)
-
-    # Some other matrices to avoid recalculating when fitting
-    # L^-1 @ A.T = (A @ L^-1.T).T = (A @ L^-1).T since L is diagonal
-    Linv_AT = (design / lambda_diagonal).T
-    A_Linv_AT = design @ Linv_AT + data_covariances
+    # Get weights covariances, and a bunch of matrices re-used in the fit of each channel
+    weights_covariances, AT_Cinv, AT_Cinv_A, Linv_AT, A_Linv_AT = (
+        calc_weight_covariances_and_matrices(
+            design,
+            freqs_2D_vector,
+            convolution_matrix,
+            rms,
+            lambda_coefficient,
+            weighting_width_inverse,
+        )
+    )
 
     # Return needed quantities in named tuple
     return Setup(
-        convolution_filter=convolution_matrix,
-        fourier_design=fourier_design_2D,
         full_design=design,
-        frequencies=freqs_2D_vector,
-        lambda_diagonal=lambda_diagonal,
-        data_covariances=data_covariances,
         weights_covariances=weights_covariances,
         AT_Cinv=AT_Cinv,
         AT_Cinv_A=AT_Cinv_A,
