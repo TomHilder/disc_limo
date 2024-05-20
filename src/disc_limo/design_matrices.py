@@ -3,9 +3,8 @@
 
 import numpy as np
 from numpy.typing import NDArray
-from scipy import sparse
 
-from .convolution_matrix import get_H_sparse_entries
+from .convolution_matrix import get_H
 
 # Constants
 DELTA_OMEGA = 0.5 * np.pi  # Frequency spacing for Fourier basis functions
@@ -64,14 +63,7 @@ def full_design_and_convolution_matrices(
     design matrix calculated as the Kronecker product of two 1D Fourier design matrices.
     """
     # Get convolution matrix
-    # TODO: Remove use of sparse matrices since it isn't needed
-    values, row_indicies, column_indicies, *_ = get_H_sparse_entries(
-        n_x, n_y, kernel_array
-    )
-    convolution_matrix = sparse.csr_array(
-        (values, (row_indicies, column_indicies)), shape=(n_x * n_y, n_x * n_y)
-    )
-    convolution_matrix = convolution_matrix.todense()
+    convolution_matrix = get_H(n_x, n_y, kernel_array)
 
     # Fourier Design matrix, and frequencies of Fourier modes for feature weighting
     fourier_design_2D, freqs_2D_vector = fourier_design_matrix_2D(

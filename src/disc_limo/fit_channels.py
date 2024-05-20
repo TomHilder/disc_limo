@@ -1,17 +1,15 @@
 # fit_channels.py
 # Thomas Hilder
 
-
 from collections import namedtuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy.convolution import Gaussian2DKernel
-from astropy.io import fits
 from numpy.typing import NDArray
 from tqdm import tqdm
 
-from .cube_io import estimate_rms, read_beam, read_nspaxels
+from .cube_io import read_cube
 from .design_matrices import full_design_and_convolution_matrices
 from .training import calc_weight_covariances_and_matrices, train_feature_weighted_gls
 
@@ -106,29 +104,16 @@ def fit_cube(
     """
 
     # Read the cube
-    cube = fits.open(filename)
-    image, header = cube[0].data, cube[0].header
-    n_x_total, n_y_total, n_channels = read_nspaxels(header)
-    beam = Gaussian2DKernel(*read_beam(header, 1))
-    rms = estimate_rms(image)
+    image, _, beam, rms, n_x, n_y, n_channels = read_cube(filename, n_pix)
 
+    # Plots if requested
     if plotting:
         plt.imshow(beam.array)
         plt.show()
-
-    # Trim cube TODO: move to own function
-    assert n_x_total == n_y_total
-    centre_index = n_x_total // 2
-    lower_index = centre_index - (n_pix // 2)
-    upper_index = centre_index + (n_pix // 2)
-    trimmed_image = image[:, lower_index:upper_index, lower_index:upper_index]
-    del image
-    n_x, n_y = trimmed_image[0, :, :].shape
-
-    if plotting:
-        plt.imshow(trimmed_image[n_channels // 2, :, :])
+        plt.imshow(image[n_channels // 2, :, :])
         plt.show()
 
+    # Calculate everything we can before fitting individual channels
     fit_info = setup_fit(
         n_x,
         n_y,
@@ -139,12 +124,14 @@ def fit_cube(
         lambda_coefficient,
     )
 
+    # Plots if requested
     if plotting:
         vmax = float(np.percentile(fit_info.weights_covariances, 99.9))
         plt.imshow(fit_info.weights_covariances, cmap="RdBu", vmin=-vmax, vmax=vmax)
         plt.colorbar()
         plt.show()
 
-    weight_vectors = fit_many_channels(trimmed_image, np.arange(n_channels), fit_info)
+    # Fit all channels to get best fit weights
+    weight_vectors = fit_many_channels(image, np.arange(n_channels), fit_info)
 
     return weight_vectors, fit_info

@@ -1,7 +1,11 @@
 # cube_io.py
 # Thomas Hilder
 
+from typing import Optional
+
 import numpy as np
+from astropy.convolution import Gaussian2DKernel
+from astropy.io import fits
 from astropy.io.fits.header import Header
 from numpy.typing import NDArray
 
@@ -14,6 +18,27 @@ DEG_TO_ARCSEC = 3600
 
 # Number of channels to calculate RMS.
 DEFAULT_NCHANNELS_NOISE = 5
+
+
+def read_cube(filename: str, n_pix: Optional[int] = None):
+    # Open cube and read image and header
+    cube = fits.open(filename)
+    image, header = cube[0].data, cube[0].header
+    # Get some needed quantities
+    n_x, n_y, n_channels = read_nspaxels(header)
+    beam = Gaussian2DKernel(*read_beam(header, 1))
+    rms = estimate_rms(image)
+    # Check image is square (we need this)
+    assert n_x == n_y
+    if n_pix is not None:
+        # Trim cube
+        centre_index = n_x // 2
+        lower_index = centre_index - (n_pix // 2)
+        upper_index = centre_index + (n_pix // 2)
+        image = image[:, lower_index:upper_index, lower_index:upper_index]
+        n_x, n_y = image[0, :, :].shape
+    # Return everything
+    return image, header, beam, rms, n_x, n_y, n_channels
 
 
 def read_pixelscale(cube_header: Header) -> float:

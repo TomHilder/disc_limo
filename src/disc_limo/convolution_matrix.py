@@ -50,6 +50,7 @@ def get_H(n_x: int, n_y: int, kernel_array: NDArray[np.float64]) -> NDArray[np.f
     return H
 
 
+# Not used
 def get_H_sparse_entries(
     n_x: int, n_y: int, kernel_array: NDArray[np.float64]
 ) -> tuple[NDArray[np.float64], NDArray[np.int64], NDArray[np.int64], int, int]:
