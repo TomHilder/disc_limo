@@ -28,7 +28,7 @@ keywords = [
     "radio",
     "interferometry",
 ]
-dependencies = ["numpy", "matplotlib", "scipy", "astropy"]
+dependencies = ["numpy", "matplotlib", "scipy", "astropy", "tqdm"]
 requires-python = ">=3.9"
 
 [project.optional-dependencies]
@@ -49,3 +49,6 @@ push = false
 "pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
 "src/disc_limo/__init__.py" = ["{version}"]
 "README.md" = ["{version}"]
+
+[tool.isort]
+profile = "black"
