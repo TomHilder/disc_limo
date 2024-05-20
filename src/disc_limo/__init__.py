@@ -9,4 +9,4 @@ TODO: Add Package description
 __version__ = "0.0.0"
 
 # User accessible classses and functions go here
-...
+from .fit_channels import fit_cube
