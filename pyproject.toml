@@ -1,0 +1,51 @@
+# pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "disc_limo"
+version = "0.0.0"
+description = "Fit linear non-parametric models to spectral line emission data."
+readme = "README.md"
+authors = [{ name = "Thomas Hilder", email = "Thomas.Hilder@monash.edu" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+keywords = [
+    "astronomy",
+    "astrophysics",
+    "research",
+    "statistics",
+    "radio",
+    "interferometry",
+]
+dependencies = ["numpy", "matplotlib", "scipy", "astropy"]
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+dev = ["black", "bumpver", "isort", "pytest", "mypy"]
+
+[project.urls]
+Homepage = "https://github.com/TomHilder/disc_limo"
+
+[tool.bumpver]
+current_version = "0.0.0"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message = "Bump version {old_version} -> {new_version}"
+commit = true
+tag = true
+push = false
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
+"src/disc_limo/__init__.py" = ["{version}"]
+"README.md" = ["{version}"]
