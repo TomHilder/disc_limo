@@ -41,6 +41,11 @@ def read_cube(filename: str, n_pix: Optional[int] = None):
     return image, header, beam, rms, n_x, n_y, n_channels
 
 
+def upsampled_beam(header, n_pix, n_eval):
+    upscale_factor = float(n_eval / n_pix)
+    return Gaussian2DKernel(*read_beam(header, upscale_factor))
+
+
 def read_pixelscale(cube_header: Header) -> float:
     """Read the pixelscale of the cube."""
     return float(cube_header["CDELT2"]) * DEG_TO_ARCSEC

@@ -2,6 +2,7 @@
 # Thomas Hilder
 
 from collections import namedtuple
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,8 +10,8 @@ from astropy.convolution import Gaussian2DKernel
 from numpy.typing import NDArray
 from tqdm import tqdm
 
-from .cube_io import read_cube
-from .design_matrices import full_design_and_convolution_matrices
+from .cube_io import read_cube, upsampled_beam
+from .design_matrices import design_and_convolution_matrices
 from .training import calc_weight_covariances_and_matrices, train_feature_weighted_gls
 
 # Named tuple for saving calculated matrices for re-use in fitting
@@ -43,7 +44,7 @@ def setup_fit(
     """
 
     # Get design matrix, fourier mode frequencies, convolution matrix
-    design, freqs_2D_vector, convolution_matrix = full_design_and_convolution_matrices(
+    _, design, freqs_2D_vector, convolution_matrix = design_and_convolution_matrices(
         n_x, n_y, n_fourier, beam_kernel.array
     )
 
@@ -134,4 +135,23 @@ def fit_cube(
     # Fit all channels to get best fit weights
     weight_vectors = fit_many_channels(image, np.arange(n_channels), fit_info)
 
-    return weight_vectors, fit_info
+    return weight_vectors, fit_info.weights_covariances
+
+
+def get_design_matrices(
+    filename: str, n_pix: int, n_fourier: int, n_eval: Optional[int] = None
+):
+    """
+    TODO: Docstring! This function is user-accessible!
+    """
+    # n_eval = n_pix if not provided by user
+    n_eval = n_pix if n_eval is None else n_eval
+    # Read the cube to get the header only
+    _, header, *_ = read_cube(filename)
+    # Get the beam kernel evaluated at correct scale for n_eval points
+    beam = upsampled_beam(header, n_pix, n_eval)
+    # Get the design matrices
+    fourier_design, full_design, *_ = design_and_convolution_matrices(
+        n_eval, n_eval, n_fourier, beam.array
+    )
+    return fourier_design, full_design

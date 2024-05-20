@@ -53,9 +53,11 @@ def fourier_design_matrix_2D(
     return fourier_design_2D, freqs_2D_vector
 
 
-def full_design_and_convolution_matrices(
+def design_and_convolution_matrices(
     n_x: int, n_y: int, n_fourier: int, kernel_array: NDArray[np.float64]
-) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+) -> tuple[
+    NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]
+]:
     """
     Create full design matrix including convolution with the beam. This is calculated as
     A = H @ Axy
@@ -73,4 +75,4 @@ def full_design_and_convolution_matrices(
     # Include convolution in full design matrix
     design_matrix = convolution_matrix @ fourier_design_2D
 
-    return design_matrix, freqs_2D_vector, convolution_matrix
+    return fourier_design_2D, design_matrix, freqs_2D_vector, convolution_matrix
