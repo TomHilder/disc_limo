@@ -8,10 +8,16 @@ from numpy.typing import NDArray
 DELTA_OMEGA = 0.5 * np.pi  # Frequency spacing for Fourier basis functions
 
 
+def get_data_points(n: int) -> NDArray[np.float64]:
+    return np.arange(0.5 / n, 1.0, 1.0 / n)
+
+
 def fourier_design_matrix(
-    t_vals: NDArray[np.float64], p: int, delta_omega: float = DELTA_OMEGA
+    n: int, p: int, delta_omega: float = DELTA_OMEGA
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Create 1D Fourier design matrix."""
+    # Get t values
+    t_vals = get_data_points(n)
     # Initialise arrays
     omegas = np.zeros(p) + np.nan
     design_matrix = np.zeros((len(np.atleast_1d(t_vals)), p))

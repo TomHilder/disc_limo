@@ -23,21 +23,33 @@ from .training import (
     weight_function_mat32,
 )
 
-# Named tuple for fitting setup
+# Named tuple for saving calculated matrices for re-use in fitting
 Setup = namedtuple(
     "Setup",
-    "convolution_filter fourier_design n_eval fourier_design_eval full_design frequencies lambda_diagonal data_covariances weights_covariances AT_Cinv AT_Cinv_A Linv_AT A_Linv_AT",
+    (
+        "convolution_filter "
+        "fourier_design "
+        "full_design "
+        "frequencies "
+        "lambda_diagonal "
+        "data_covariances "
+        "weights_covariances "
+        "AT_Cinv "
+        "AT_Cinv_A "
+        "Linv_AT "
+        "A_Linv_AT"
+    ),
 )
 
 
 def setup_fit(
-    n_data: int,
+    n_x: int,
+    n_y: int,
     beam_kernel: Gaussian2DKernel,
     rms: float,
     n_fourier: int,
     weighting_width_inverse: float,
     lambda_coefficient: float,
-    n_eval: int,
 ) -> Setup:
     """
     Calculate everything needed for the fit and return named tuple containing quanities we want
@@ -45,34 +57,22 @@ def setup_fit(
     on the best fits).
     """
 
-    # Setup data point and interpolation (best fit eval.) locations
-    # TODO: move get_data_points to design_matrices.py to allow for in-place re-creation
-    n_x = n_y = int(np.sqrt(n_data))
-    get_data_points = lambda n: np.arange(0.5 / n, 1.0, 1.0 / n)
-    x_data = get_data_points(n_x)
-    y_data = get_data_points(n_y)
-    # x_eval = get_data_points(n_eval)
-    # y_eval = get_data_points(n_eval)
-
     # Get convolution matrix
     # TODO: create get_convolution matrix function and move to design_matrices.py to allow for in-place re-creation
     values, row_indicies, column_indicies, *_ = get_H_sparse_entries(
         n_x, n_y, beam_kernel.array
     )
     convolution_matrix = sparse.csr_array(
-        (values, (row_indicies, column_indicies)), shape=(n_data, n_data)
+        (values, (row_indicies, column_indicies)), shape=(n_x * n_y, n_x * n_y)
     )
     convolution_matrix = convolution_matrix.todense()
 
     # 1D Fourier design matrices
-    fourier_design_x, freqs_x = fourier_design_matrix(x_data, n_fourier)
-    fourier_design_y, freqs_y = fourier_design_matrix(y_data, n_fourier)
-    # fourier_design_x_eval, _ = fourier_design_matrix(x_eval, n_fourier)
-    # fourier_design_y_eval, _ = fourier_design_matrix(y_eval, n_fourier)
+    fourier_design_x, freqs_x = fourier_design_matrix(n_x, n_fourier)
+    fourier_design_y, freqs_y = fourier_design_matrix(n_y, n_fourier)
 
     # Create 2D Fourier design matrices
     fourier_design_2D = np.kron(fourier_design_x, fourier_design_y)
-    # fourier_design_2D_eval = np.kron(fourier_design_x_eval, fourier_design_y_eval)
     freqs_2D = np.sqrt(np.add.outer(freqs_x**2, freqs_y**2))
     freqs_2D_vector = freqs_2D.flatten()
 
@@ -114,19 +114,10 @@ def setup_fit(
     Linv_AT = (design / lambda_diagonal).T
     A_Linv_AT = design @ Linv_AT + data_covariances
 
-    vmax = float(np.percentile(weights_covariances, 99.9))
-    plt.imshow(weights_covariances, cmap="RdBu", vmin=-vmax, vmax=vmax)
-    plt.colorbar()
-    plt.show()
-
     # Return needed quantities in named tuple
     return Setup(
         convolution_filter=convolution_matrix,
         fourier_design=fourier_design_2D,
-        # n_eval=n_eval,
-        # fourier_design_eval=fourier_design_2D_eval,
-        n_eval=None,
-        fourier_design_eval=None,
         full_design=design,
         frequencies=freqs_2D_vector,
         lambda_diagonal=lambda_diagonal,
@@ -166,8 +157,11 @@ def fit_cube(
     n_fourier: int,
     weighting_width_inverse: float,
     lambda_coefficient: float,
-    n_eval: int,
+    plotting: bool = False,
 ) -> tuple[NDArray[np.float64], Setup]:
+    """
+    TODO: Docstring! This function is user-accessible!
+    """
 
     # Read the cube
     cube = fits.open(filename)
@@ -175,10 +169,10 @@ def fit_cube(
     n_x_total, n_y_total, n_channels = read_nspaxels(header)
     beam = Gaussian2DKernel(*read_beam(header, 1))
     rms = estimate_rms(image)
-    print(rms)
 
-    plt.imshow(beam.array)
-    plt.show()
+    if plotting:
+        plt.imshow(beam.array)
+        plt.show()
 
     # Trim cube TODO: move to own function
     assert n_x_total == n_y_total
@@ -189,18 +183,25 @@ def fit_cube(
     del image
     n_x, n_y = trimmed_image[0, :, :].shape
 
-    plt.imshow(trimmed_image[n_channels // 2, :, :])
-    plt.show()
+    if plotting:
+        plt.imshow(trimmed_image[n_channels // 2, :, :])
+        plt.show()
 
     fit_info = setup_fit(
-        n_x * n_y,
+        n_x,
+        n_y,
         beam,
         rms,
         n_fourier,
         weighting_width_inverse,
         lambda_coefficient,
-        n_eval,
     )
+
+    if plotting:
+        vmax = float(np.percentile(fit_info.weights_covariances, 99.9))
+        plt.imshow(fit_info.weights_covariances, cmap="RdBu", vmin=-vmax, vmax=vmax)
+        plt.colorbar()
+        plt.show()
 
     weight_vectors = fit_many_channels(trimmed_image, np.arange(n_channels), fit_info)
 
