@@ -71,21 +71,13 @@ def setup_fit(
     )
 
 
-def fit_single_channel(
-    data_vector: NDArray[np.float64],
-    fit_info: Setup,
-) -> NDArray[np.float64]:
-    # Train model
-    return train_feature_weighted_gls(data_vector, fit_info)
-
-
 def fit_many_channels(
     image: NDArray[np.float64], channel_indicies: NDArray[np.int64], fit_info: Setup
 ) -> NDArray[np.float64]:
     weight_vectors = []
     # Fit for each specified channel and append results
     for i in tqdm(channel_indicies):
-        weight_vector = fit_single_channel(
+        weight_vector = train_feature_weighted_gls(
             data_vector=image[i, :, :].flatten().T, fit_info=fit_info
         )
         weight_vectors.append(weight_vector)
