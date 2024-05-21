@@ -1,5 +1,6 @@
 # design_matrices.py
-# Thomas Hilder, adapted from code by Hogg & Villar (2021) https://arxiv.org/abs/2101.07256
+# Thomas Hilder, adapted from code by Hogg & Villar (2021) available at
+# https://arxiv.org/abs/2101.07256
 
 import numpy as np
 from numpy.typing import NDArray
@@ -49,12 +50,10 @@ def fourier_design_matrix_2D(
     # 1D Fourier design matrices
     fourier_design_x, freqs_x = fourier_design_matrix(n_x, n_fourier_x)
     fourier_design_y, freqs_y = fourier_design_matrix(n_y, n_fourier_y)
-
     # Create 2D Fourier design matrices
     fourier_design_2D = np.kron(fourier_design_x, fourier_design_y)
     freqs_2D = np.sqrt(np.add.outer(freqs_x**2, freqs_y**2))
     freqs_2D_vector = freqs_2D.flatten()
-
     return fourier_design_2D, freqs_2D_vector
 
 
@@ -69,18 +68,16 @@ def design_and_convolution_matrices(
     """
     Create full design matrix including convolution with the beam. This is calculated as
     A = H @ Axy
-    where A is the full design matrix, H is the convolution matrix and Axy is the 2D Fourier
-    design matrix calculated as the Kronecker product of two 1D Fourier design matrices.
+    where A is the full design matrix, H is the convolution matrix and Axy is the 2D
+    Fourier design matrix calculated as the Kronecker product of two 1D Fourier design
+    matrices.
     """
     # Get convolution matrix
     convolution_matrix = get_H(n_x, n_y, kernel_array)
-
     # Fourier Design matrix, and frequencies of Fourier modes for feature weighting
     fourier_design_2D, freqs_2D_vector = fourier_design_matrix_2D(
         n_x, n_y, n_fourier, n_fourier
     )
-
     # Include convolution in full design matrix
     design_matrix = convolution_matrix @ fourier_design_2D
-
     return fourier_design_2D, design_matrix, freqs_2D_vector, convolution_matrix

@@ -1,5 +1,6 @@
 # training.py
-# Thomas Hilder, adapted from code by Hogg & Villar (2021) https://arxiv.org/abs/2101.07256
+# Thomas Hilder, adapted from code by Hogg & Villar (2021) available at
+# https://arxiv.org/abs/2101.07256
 
 from __future__ import annotations
 
@@ -13,7 +14,9 @@ from numpy.typing import NDArray
 from scipy.linalg import lu
 
 # Constants
-RCOND = 1e-16  # Cut-off ratio for small singular values of A in solve using NumPy's least squares function
+# Cut-off ratio for small singular values of A in solve using NumPy's least squares
+# function
+RCOND = 1e-16
 
 
 def solve(A: NDArray[np.float64], Y: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -31,22 +34,20 @@ def calc_weight_covariances_and_matrices(
     weighting_width_inverse: float,
 ):
     """
-    Calculates the covariances on the weights in every channel (they are the same
-    in all channels) and a bunch of matrices that are constant across fits for
-    each channel to save (a lot) of time.
+    Calculates the covariances on the weights in every channel (they are the same in all
+    channels) and a bunch of matrices that are constant across fits for each channel to
+    save (a lot) of time.
     """
     # Values along main diagonal of regularisation weighting matrix lambda
     lambda_diagonal = (
         lambda_coefficient
         / weight_function_exp(freqs_2D_vector, weighting_width_inverse) ** 2
     )
-
     # Data covariance matrix from correlation (convolution) matrix
     # This is a short-cut that is equivalent to the full expression for
     # the covariance matrix in terms of the correlation matrix since the
     # scale of the noise in all pixels is assumed constant.
     data_covariances = rms**2 * convolution / convolution.max()
-
     # ## Calculate variances on weights for fits
     # First calculate A.T @ C^-1 @ A + Lambda
     # Setting Gamma = A.T @ C^-1 implies Gamma @ C = A.T
@@ -67,12 +68,10 @@ def calc_weight_covariances_and_matrices(
     # Now solve U @ x = y which gives us the inverse of A.T @ C^-1 @ A + Lambda
     # weights_covariances = np.linalg.lstsq(u_factor, y, rcond=RCOND)[0]
     weights_covariances = solve(u_factor, y)
-
     # Some other matrices to avoid recalculating when fitting
     # L^-1 @ A.T = (A @ L^-1.T).T = (A @ L^-1).T since L is diagonal
     Linv_AT = (design / lambda_diagonal).T
     A_Linv_AT = design @ Linv_AT + data_covariances
-
     return weights_covariances, AT_Cinv, AT_Cinv_A, Linv_AT, A_Linv_AT
 
 

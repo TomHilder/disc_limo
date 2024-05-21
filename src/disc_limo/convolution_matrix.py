@@ -69,15 +69,12 @@ def get_H_sparse_entries(
     data: list = []
     row_ind: list = []
     col_ind: list = []
-
     for i in range(n_x * n_y):
         k = i // n_x
         l = i % n_y
         v = get_cut_and_padded_kernel(kernel_array, (n_y, n_x), k, l).flatten()
-
         is_non_zero = v > 0
         row_ind.extend([i] * int(np.sum(is_non_zero)))
         col_ind.extend(np.where(is_non_zero)[0])
         data.extend(v[is_non_zero])
-
     return np.array(data), np.array(row_ind), np.array(col_ind), M, N

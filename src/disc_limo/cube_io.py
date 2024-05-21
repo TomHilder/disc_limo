@@ -56,8 +56,8 @@ def read_pixelscale(cube_header: Header) -> float:
 
 def read_beam(cube_header: Header, scale: float = 1) -> tuple[float, float, float]:
     """
-    Read the beam from cube header. Returns (bmaj, bmin, bpa) with bmaj
-    and bmin as standard deviations in pixels, and bpa in radians.
+    Read the beam from cube header. Returns (bmaj, bmin, bpa) with bmaj and bmin as
+    standard deviations in pixels, and bpa in radians.
     """
     pixelscale = read_pixelscale(cube_header)
     return (
@@ -83,8 +83,7 @@ def estimate_rms(
     image: NDArray[np.float64], nchannels: int = DEFAULT_NCHANNELS_NOISE
 ) -> float:
     """
-    Estimate the RMS noise of the cube from the first and last 5 channels
-    by default.
+    Estimate the RMS noise of the cube from the first and last 5 channels by default.
     """
     # Estimate RMS using standard deviation of channels far from systemic velocity
     return float(
