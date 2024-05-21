@@ -104,6 +104,10 @@ def fit_cube(
         plt.imshow(image[n_channels // 2, :, :])
         plt.show()
     # Calculate everything we can before fitting individual channels
+    print(
+        "Calculating covariance matrix for Fourier weights and resused matrices... ",
+        end="",
+    )
     fit_info = setup_fit(
         n_x,
         n_y,
@@ -113,6 +117,7 @@ def fit_cube(
         weighting_width_inverse,
         lambda_coefficient,
     )
+    print("done.")
     # Plots if requested
     if plotting:
         vmax = float(np.percentile(fit_info.weights_covariances, 99.9))
@@ -120,7 +125,9 @@ def fit_cube(
         plt.colorbar()
         plt.show()
     # Fit all channels to get best fit weights
+    print("Calculating posterior means of Fourier weights for each channel:")
     weights_vectors = fit_many_channels(image, np.arange(n_channels), fit_info)
+    print("Fit complete!")
     return weights_vectors, fit_info.weights_covariances
 
 

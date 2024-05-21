@@ -7,6 +7,7 @@ import numpy as np
 from numpy.linalg import LinAlgError, cholesky, eigh
 from numpy.typing import NDArray
 from scipy.linalg import issymmetric
+from tqdm import tqdm
 
 
 def decompose_covariance_matrix(Sigma: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -27,10 +28,10 @@ def decompose_covariance_matrix(Sigma: NDArray[np.float64]) -> NDArray[np.float6
         # Sigma is real and symmetric Q^-1 = Q.T. Thus we can set A = Q @ Lambda^1/2
         eigenvalues, Q = eigh(Sigma)
         Lambda_half = Q @ np.diag(np.sqrt(eigenvalues))
-        return Q @ Lambda_half
+        return np.asarray(Q @ Lambda_half, np.float64)
 
 
-def sample_posterior(
+def get_posterior_samples(
     weights_vectors: NDArray[np.float64],
     weights_covariances: NDArray[np.float64],
     n_samples: int,
@@ -45,7 +46,8 @@ def sample_posterior(
     # Iterate to create sample cubes, could probably be parallelised but it's pretty
     # fast anyway
     samples = []
-    for _ in range(n_samples):
+    print(f"Generating {n_samples} posterior samples of Fourier weights:")
+    for _ in tqdm(range(n_samples)):
         # Vectors full of standard normal samples
         alpha_vectors = rng.standard_normal(size=weights_vectors.shape).T
         # Transform to desired multivariate normal using covariance matrix decomposition
