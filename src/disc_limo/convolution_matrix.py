@@ -6,7 +6,10 @@ from numpy.typing import NDArray
 
 
 def get_cut_and_padded_kernel(
-    kernel_array: NDArray[np.float64], image_shape: tuple, i_pix: int, j_pix: int
+    kernel_array: NDArray[np.float64],
+    image_shape: tuple,
+    i_pix: int,
+    j_pix: int,
 ) -> NDArray[np.float64]:
     """
     Useful function for putting together H by cutting down/padding
@@ -40,7 +43,11 @@ def get_cut_and_padded_kernel(
     return res
 
 
-def get_H(n_x: int, n_y: int, kernel_array: NDArray[np.float64]) -> NDArray[np.float64]:
+def get_H(
+    n_x: int,
+    n_y: int,
+    kernel_array: NDArray[np.float64],
+) -> NDArray[np.float64]:
     """Function to put together the convolution matrix H."""
     H = np.zeros((n_x * n_y, n_x * n_y))
     for i in range(n_x * n_y):
@@ -52,7 +59,9 @@ def get_H(n_x: int, n_y: int, kernel_array: NDArray[np.float64]) -> NDArray[np.f
 
 # Not used
 def get_H_sparse_entries(
-    n_x: int, n_y: int, kernel_array: NDArray[np.float64]
+    n_x: int,
+    n_y: int,
+    kernel_array: NDArray[np.float64],
 ) -> tuple[NDArray[np.float64], NDArray[np.int64], NDArray[np.int64], int, int]:
     """Function to put together the convolution matrix H as a sparse matrix."""
     M = n_x * n_y

@@ -15,7 +15,9 @@ def get_data_points(n: int) -> NDArray[np.float64]:
 
 
 def fourier_design_matrix(
-    n: int, p: int, delta_omega: float = DELTA_OMEGA
+    n: int,
+    p: int,
+    delta_omega: float = DELTA_OMEGA,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Create 1D Fourier design matrix."""
     # Get t values
@@ -38,7 +40,10 @@ def fourier_design_matrix(
 
 
 def fourier_design_matrix_2D(
-    n_x: int, n_y: int, n_fourier_x: int, n_fourier_y: int
+    n_x: int,
+    n_y: int,
+    n_fourier_x: int,
+    n_fourier_y: int,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Create 2D Fourier design matrix as Kronecker product of two 1D matrices."""
     # 1D Fourier design matrices
@@ -54,7 +59,10 @@ def fourier_design_matrix_2D(
 
 
 def design_and_convolution_matrices(
-    n_x: int, n_y: int, n_fourier: int, kernel_array: NDArray[np.float64]
+    n_x: int,
+    n_y: int,
+    n_fourier: int,
+    kernel_array: NDArray[np.float64],
 ) -> tuple[
     NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]
 ]:

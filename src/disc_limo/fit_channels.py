@@ -72,7 +72,9 @@ def setup_fit(
 
 
 def fit_many_channels(
-    image: NDArray[np.float64], channel_indicies: NDArray[np.int64], fit_info: Setup
+    image: NDArray[np.float64],
+    channel_indicies: NDArray[np.int64],
+    fit_info: Setup,
 ) -> NDArray[np.float64]:
     weight_vectors = []
     # Fit for each specified channel and append results
@@ -125,13 +127,16 @@ def fit_cube(
         plt.show()
 
     # Fit all channels to get best fit weights
-    weight_vectors = fit_many_channels(image, np.arange(n_channels), fit_info)
+    weights_vectors = fit_many_channels(image, np.arange(n_channels), fit_info)
 
-    return weight_vectors, fit_info.weights_covariances
+    return weights_vectors, fit_info.weights_covariances
 
 
 def get_design_matrices(
-    filename: str, n_pix: int, n_fourier: int, n_eval: Optional[int] = None
+    filename: str,
+    n_pix: int,
+    n_fourier: int,
+    n_eval: Optional[int] = None,
 ):
     """
     TODO: Docstring! This function is user-accessible!

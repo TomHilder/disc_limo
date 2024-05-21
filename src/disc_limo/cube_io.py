@@ -20,7 +20,10 @@ DEG_TO_ARCSEC = 3600
 DEFAULT_NCHANNELS_NOISE = 5
 
 
-def read_cube(filename: str, n_pix: Optional[int] = None):
+def read_cube(
+    filename: str,
+    n_pix: Optional[int] = None,
+) -> tuple[NDArray[np.float64], Header, Gaussian2DKernel, float, int, int, int]:
     # Open cube and read image and header
     cube = fits.open(filename)
     image, header = cube[0].data, cube[0].header
@@ -41,7 +44,7 @@ def read_cube(filename: str, n_pix: Optional[int] = None):
     return image, header, beam, rms, n_x, n_y, n_channels
 
 
-def upsampled_beam(header, n_pix, n_eval):
+def upsampled_beam(header: Header, n_pix: int, n_eval: int) -> Gaussian2DKernel:
     upscale_factor = float(n_eval / n_pix)
     return Gaussian2DKernel(*read_beam(header, upscale_factor))
 
