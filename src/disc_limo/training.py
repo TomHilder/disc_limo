@@ -63,10 +63,8 @@ def calc_weight_covariances_and_matrices(
     # Invert using an PLU decomposition
     permutation, l_factor, u_factor = lu(AT_Cinv_A)
     # First solve L @ y = P.T @ I
-    # y = np.linalg.lstsq(l_factor, permutation.T, rcond=RCOND)[0]
     y = solve(l_factor, permutation.T)
     # Now solve U @ x = y which gives us the inverse of A.T @ C^-1 @ A + Lambda
-    # weights_covariances = np.linalg.lstsq(u_factor, y, rcond=RCOND)[0]
     weights_covariances = solve(u_factor, y)
     # Some other matrices to avoid recalculating when fitting
     # L^-1 @ A.T = (A @ L^-1.T).T = (A @ L^-1).T since L is diagonal
