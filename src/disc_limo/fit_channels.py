@@ -107,6 +107,7 @@ def fit_cube(
     print(
         "Calculating covariance matrix for Fourier weights and resused matrices... ",
         end="",
+        flush=True,
     )
     fit_info = setup_fit(
         n_x,
