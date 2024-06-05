@@ -6,6 +6,8 @@ from numpy.typing import NDArray
 from scipy.optimize import minimize
 from tqdm import tqdm
 
+from .cube_io import DEFAULT_NCHANNELS_NOISE
+
 MINIMZE_METHOD = "L-BFGS-B"
 BOUNDS_GAUSSIAN = [(1e-8, np.inf), (-np.inf, np.inf), (1e-8, np.inf)]
 
@@ -28,12 +30,17 @@ def neg_ln_likelihood_obj_func(
     return 0.5 * np.sum((y - f(x, *theta)) ** 2)
 
 
-def fit_gaussian(x, y):
+def fit_gaussian(x, y, inits=None):
     initial_theta = (
-        np.max(y),
-        x[np.argmax(y)],
-        0.5 * np.ptp(x),
+        inits
+        if inits is not None
+        else (
+            np.max(y),
+            x[np.argmax(y)],
+            0.5 * np.ptp(x),
+        )
     )
+
     fit = minimize(
         neg_ln_likelihood_obj_func,
         initial_theta,
@@ -63,6 +70,7 @@ def fit_gaussians(
     velocities,
     cube,
     cut_off=None,
+    rms=None,
 ):
     # Get cube dimensions, assuming last two dimensions are spatial and 3rd-to-last
     # dimension is spectral/velocities
@@ -73,6 +81,19 @@ def fit_gaussians(
     # Now reduce shape to (n_v, ...) for easy iteration
     old_cube_shape = cube.shape
     flat_cube = cube.reshape((n_v, -1))
+    # Get velocity spacing
+    delta_v = velocities[1] - velocities[0]
+
+    # Estimate rms if not provided
+    if rms is None:
+        rms = np.nanstd(
+            a=np.concatenate(
+                [
+                    flat_cube[:DEFAULT_NCHANNELS_NOISE, :],
+                    flat_cube[-DEFAULT_NCHANNELS_NOISE:, :],
+                ]
+            )
+        )
 
     # Iterate over all pixels in cube
     print("Fitting Gaussian line profiles to all provided pixels:")
@@ -80,10 +101,18 @@ def fit_gaussians(
     centroid = np.zeros((flat_cube.shape[1]))
     width = np.zeros((flat_cube.shape[1]))
     for i in tqdm(range(flat_cube.shape[1])):
+        line = flat_cube[:, i]
         # Find best fit parameters of Gaussian
-        # if cut_off is not None and np.max(flat_cube[:, i]) > cut_off:
-        if cut_off is None or np.max(flat_cube[:, i]) >= cut_off:
-            peak[i], centroid[i], width[i] = fit_gaussian(velocities, flat_cube[:, i])
+        if cut_off is None or np.max(line) >= cut_off * rms:
+            # Get inits
+            inits = (
+                np.max(line),
+                velocities[np.argmax(line)],
+                0.5 * np.sum(line > 3 * rms) * delta_v,
+            )
+            peak[i], centroid[i], width[i] = fit_gaussian(
+                velocities, flat_cube[:, i], inits
+            )
         else:
             peak[i], centroid[i], width[i] = np.nan, np.nan, np.nan
 
