@@ -71,6 +71,7 @@ def fit_gaussians(
     cube,
     cut_off=None,
     rms=None,
+    stupid_mode=False,
 ):
     # Get cube dimensions, assuming last two dimensions are spatial and 3rd-to-last
     # dimension is spectral/velocities
@@ -103,18 +104,25 @@ def fit_gaussians(
     for i in tqdm(range(flat_cube.shape[1])):
         line = flat_cube[:, i]
         # Find best fit parameters of Gaussian
-        if cut_off is None or np.max(line) >= cut_off * rms:
-            # Get inits
-            inits = (
+        if stupid_mode:
+            peak[i], centroid[i], width[i] = (
                 np.max(line),
                 velocities[np.argmax(line)],
-                0.5 * np.sum(line > 3 * rms) * delta_v,
-            )
-            peak[i], centroid[i], width[i] = fit_gaussian(
-                velocities, flat_cube[:, i], inits
+                np.nan,
             )
         else:
-            peak[i], centroid[i], width[i] = np.nan, np.nan, np.nan
+            if cut_off is None or np.max(line) >= cut_off * rms:
+                # Get inits
+                inits = (
+                    np.max(line),
+                    velocities[np.argmax(line)],
+                    0.5 * np.sum(line > 3 * rms) * delta_v,
+                )
+                peak[i], centroid[i], width[i] = fit_gaussian(
+                    velocities, flat_cube[:, i], inits
+                )
+            else:
+                peak[i], centroid[i], width[i] = np.nan, np.nan, np.nan
 
     # Return best fit parameters for each pixel as 3 arrays
     fix_shape = lambda x: move_axes_for_iteration(
