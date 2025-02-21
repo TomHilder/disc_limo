@@ -17,7 +17,7 @@ def get_data_points(n: int) -> NDArray[np.float64]:
     return np.linspace(-0.5 * π, 0.5 * π, n, dtype=FLOAT_DTYPE)
 
 
-def fourier_operator(
+def F_operator(
     n_x: int,
     n_y: int,
     n_fourier_x: int,
@@ -64,7 +64,7 @@ def design_operators(
     # Convolution
     H = H_operator(n_x, n_y, kernel_array)
     # Fourier design operator, and frequencies of modes for feature weighting
-    F, ω = fourier_operator(n_x, n_y, n_fourier_x, n_fourier_y)
+    F, ω = F_operator(n_x, n_y, n_fourier_x, n_fourier_y)
     # Full forward model operator includes convolution
     A = H @ F
-    return F, A, ω, F
+    return F, A, ω, H

@@ -11,25 +11,16 @@ from numpy.typing import NDArray
 from tqdm import tqdm
 
 from .cube_io import read_cube, upsampled_beam
-from .design_matrices import design_and_convolution_matrices
-from .training import calc_weight_covariances_and_matrices, train_feature_weighted_gls
+from .data_covariances import C_operator
+from .design_matrices import design_operators
+from .regularisation import Λ_operator
+from .training import train_feature_weighted_gls
 
 # TODO: replace with functions that make linear operators if need be
 #       fix variable names (use greek letters)
 
-
-# Named tuple for saving calculated matrices for re-use in fitting
-Setup = namedtuple(
-    "Setup",
-    (
-        "full_design "
-        "weights_covariances "
-        "AT_Cinv "
-        "AT_Cinv_A "
-        "Linv_AT "
-        "A_Linv_AT"
-    ),
-)
+# Named tuple for operators, frequencies vector and hyperparameters
+Setup = namedtuple("Setup", ["A", "F", "H", "C", "λ", "ω", "s"])
 
 
 def setup_fit(
@@ -37,9 +28,10 @@ def setup_fit(
     n_y: int,
     beam_kernel: Gaussian2DKernel,
     rms: float,
-    n_fourier: int,
-    weighting_width_inverse: float,
-    lambda_coefficient: float,
+    n_fourier_x: int,
+    n_fourier_y: int,
+    s: float,
+    λ: float,
 ) -> Setup:
     """
     Calculate everything needed for the fit and return named tuple containing quanities
@@ -49,31 +41,12 @@ def setup_fit(
     # For now we are not handling rectangular images
     if n_x != n_y:
         raise NotImplementedError("Only square images supported currently.")
-    # Get design matrix, fourier mode frequencies, convolution matrix
-    _, design, freqs_2D_vector, convolution_matrix = design_and_convolution_matrices(
-        n_x, n_y, n_fourier, beam_kernel.array
-    )
-    # Get weights covariances, and a bunch of matrices re-used in the fit of each
-    # channel
-    weights_covariances, AT_Cinv, AT_Cinv_A, Linv_AT, A_Linv_AT = (
-        calc_weight_covariances_and_matrices(
-            design,
-            freqs_2D_vector,
-            convolution_matrix,
-            rms,
-            lambda_coefficient,
-            weighting_width_inverse,
-        )
-    )
-    # Return needed quantities in named tuple
-    return Setup(
-        full_design=design,
-        weights_covariances=weights_covariances,
-        AT_Cinv=AT_Cinv,
-        AT_Cinv_A=AT_Cinv_A,
-        Linv_AT=Linv_AT,
-        A_Linv_AT=A_Linv_AT,
-    )
+    # Get design operator, Fourier operator, frequencies, conv operator
+    F, A, ω, H = design_operators(n_x, n_y, n_fourier_x, n_fourier_y, beam_kernel.array)
+    # Get data covariances operator
+    C = C_operator(rms, n_x, n_y, beam_kernel.array)
+    # Store operators and hyperparameters in named tuple
+    return Setup(A=A, F=F, H=H, C=C, λ=λ, ω=ω, s=s)
 
 
 def fit_many_channels(
