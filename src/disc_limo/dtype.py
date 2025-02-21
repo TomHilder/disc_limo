@@ -1,5 +1,7 @@
 # dtype.py
 # Thomas Hilder
 
-FLOAT_DTYPE = "float64"
-COMPLEX_DTYPE = "complex128"
+import numpy as np
+
+FLOAT_DTYPE = np.float64
+COMPLEX_DTYPE = np.complex128

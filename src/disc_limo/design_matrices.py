@@ -3,83 +3,68 @@
 # https://arxiv.org/abs/2101.07256
 
 import numpy as np
+import pylops as pl
+from nifty_solve import Finufft2DRealOperator
 from numpy.typing import NDArray
 
-from .convolution_matrix import get_H
+from disc_limo.convolution_matrix import H_operator
 
-# TODO: replace with linear operators!
-
-# Constants
-DELTA_OMEGA = 0.5 * np.pi  # Frequency spacing for Fourier basis functions
+from .constants import FINUFFT_TOL, π
+from .dtype import FLOAT_DTYPE
 
 
 def get_data_points(n: int) -> NDArray[np.float64]:
-    return np.arange(0.5 / n, 1.0, 1.0 / n)
+    return np.linspace(-0.5 * π, 0.5 * π, n, dtype=FLOAT_DTYPE)
 
 
-def fourier_design_matrix(
-    n: int,
-    p: int,
-    delta_omega: float = DELTA_OMEGA,
-) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-    """Create 1D Fourier design matrix."""
-    # Get t values
-    t_vals = get_data_points(n)
-    # Initialise arrays
-    omegas = np.zeros(p) + np.nan
-    design_matrix = np.zeros((len(np.atleast_1d(t_vals)), p))
-    # Set zeroth values
-    omegas[0] = 0.0
-    design_matrix[:, 0] = 1.0
-    # Set matrix entries following Hogg & Villar (2021)
-    for j in range(1, p):
-        omega = np.floor((j + 1.0001) / 2.0) * delta_omega
-        omegas[j] = omega
-        if j % 2 == 1:
-            design_matrix[:, j] = np.sin(omega * t_vals)
-        else:
-            design_matrix[:, j] = np.cos(omega * t_vals)
-    return design_matrix, omegas
-
-
-def fourier_design_matrix_2D(
+def fourier_operator(
     n_x: int,
     n_y: int,
     n_fourier_x: int,
     n_fourier_y: int,
-) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-    """Create 2D Fourier design matrix as Kronecker product of two 1D matrices."""
-    # 1D Fourier design matrices
-    fourier_design_x, freqs_x = fourier_design_matrix(n_x, n_fourier_x)
-    fourier_design_y, freqs_y = fourier_design_matrix(n_y, n_fourier_y)
-    # Create 2D Fourier design matrices
-    fourier_design_2D = np.kron(fourier_design_x, fourier_design_y)
-    freqs_2D = np.sqrt(np.add.outer(freqs_x**2, freqs_y**2))
-    freqs_2D_vector = freqs_2D.flatten()
-    return fourier_design_2D, freqs_2D_vector
+) -> tuple[pl.LinearOperator, NDArray[np.float64]]:
+    """
+    Get linear operator representing 2D Fourier design matrix. Uses fiNUFFT and pylops
+    as a backend, with operator implemented in nifty-solve.
+    """
+    # Image coordinates
+    t_x, t_y = (get_data_points(n) for n in [n_x, n_y])
+    t_x, t_y = [t.flatten() for t in np.meshgrid(t_x, t_y)]
+    # Build operator
+    F = Finufft2DRealOperator(
+        x=t_x,
+        y=t_y,
+        n_modes=(n_fourier_x, n_fourier_y),
+        eps=FINUFFT_TOL,
+    )
+    # Frequencies
+    ω_x, ω_y = F.get_mode_freqs()
+    ω = np.sqrt(ω_x**2 + ω_y**2)
+    return F, ω
 
 
-def design_and_convolution_matrices(
+def design_operators(
     n_x: int,
     n_y: int,
-    n_fourier: int,
+    n_fourier_x: int,
+    n_fourier_y: int,
     kernel_array: NDArray[np.float64],
 ) -> tuple[
-    NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]
+    pl.LinearOperator, pl.LinearOperator, NDArray[np.float64], pl.LinearOperator
 ]:
     """
-    Create full design matrix including convolution with the beam. This is calculated as
-    A = H @ Axy
-    where A is the full design matrix, H is the convolution matrix and Axy is the 2D
-    Fourier design matrix calculated as the Kronecker product of two 1D Fourier design
-    matrices.
+    Create linear operator representing design matrix for full forward model including
+    convolution with idealised beam. Calculated as
+    A = H @ F
+    where A is the full design matrix, H is the convolution matrix and F is the 2D
+    Fourier design matrix. ω is a vector containing the frequencies of each mode. All
+    matrices are represented with linear operators.
+    Function returns F, A, ω, H
     """
-    # Get convolution matrix
-    convolution_matrix = get_H(n_x, n_y, kernel_array)
-    # Fourier Design matrix, and frequencies of Fourier modes for feature weighting
-    fourier_design_2D, freqs_2D_vector = fourier_design_matrix_2D(
-        n_x, n_y, n_fourier, n_fourier
-    )
-    # Include convolution in full design matrix
-    design_matrix = convolution_matrix @ fourier_design_2D
-    return fourier_design_2D, design_matrix, freqs_2D_vector, convolution_matrix
+    # Convolution
+    H = H_operator(n_x, n_y, kernel_array)
+    # Fourier design operator, and frequencies of modes for feature weighting
+    F, ω = fourier_operator(n_x, n_y, n_fourier_x, n_fourier_y)
+    # Full forward model operator includes convolution
+    A = H @ F
+    return F, A, ω, F
