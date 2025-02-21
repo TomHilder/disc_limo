@@ -11,6 +11,8 @@ from .cube_io import DEFAULT_NCHANNELS_NOISE
 MINIMZE_METHOD = "L-BFGS-B"
 BOUNDS_GAUSSIAN = [(1e-8, np.inf), (-np.inf, np.inf), (1e-8, np.inf)]
 
+# TODO: change some stuff to greek letters
+
 
 def gaussian(
     x: NDArray,

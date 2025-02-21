@@ -7,6 +7,8 @@ from numpy.typing import NDArray
 
 from .convolution_matrix import get_H
 
+# TODO: replace with linear operators!
+
 # Constants
 DELTA_OMEGA = 0.5 * np.pi  # Frequency spacing for Fourier basis functions
 

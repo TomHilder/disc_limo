@@ -13,6 +13,9 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.linalg import lu
 
+# TODO: MAJOR changes. Solve with lin ops and CG. We also need a preconditioner.
+#       Very importantly, we will no longer have Cinv AT ALL!
+
 # Constants
 # Cut-off ratio for small singular values of A in solve using NumPy's least squares
 # function

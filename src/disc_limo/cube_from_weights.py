@@ -1,9 +1,11 @@
-# cube_from_weights
+# cube_from_weights.py
 # Thomas Hilder
 
 import numpy as np
 from numpy.typing import NDArray
 from tqdm import tqdm
+
+# TODO: Fix type hints because the design matrix will be an operator
 
 
 def convert_weights_to_channels(

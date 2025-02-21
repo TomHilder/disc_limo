@@ -14,6 +14,10 @@ from .cube_io import read_cube, upsampled_beam
 from .design_matrices import design_and_convolution_matrices
 from .training import calc_weight_covariances_and_matrices, train_feature_weighted_gls
 
+# TODO: replace with functions that make linear operators if need be
+#       fix variable names (use greek letters)
+
+
 # Named tuple for saving calculated matrices for re-use in fitting
 Setup = namedtuple(
     "Setup",
@@ -42,6 +46,9 @@ def setup_fit(
     we want to avoid re-calcualating since they are constant for all channels (for
     example the variances on the best fits).
     """
+    # For now we are not handling rectangular images
+    if n_x != n_y:
+        raise NotImplementedError("Only square images supported currently.")
     # Get design matrix, fourier mode frequencies, convolution matrix
     _, design, freqs_2D_vector, convolution_matrix = design_and_convolution_matrices(
         n_x, n_y, n_fourier, beam_kernel.array

@@ -9,6 +9,9 @@ from numpy.typing import NDArray
 from scipy.linalg import issymmetric
 from tqdm import tqdm
 
+# TODO: decompose instead the *precision* matrix, probably using Cholesky. Then we will
+#       draw samples with linear solves using the Cholesky factor from the precision mat
+
 
 def decompose_covariance_matrix(Sigma: NDArray[np.float64]) -> NDArray[np.float64]:
     """
