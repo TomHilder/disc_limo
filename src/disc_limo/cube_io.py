@@ -9,14 +9,9 @@ from astropy.io import fits
 from astropy.io.fits.header import Header
 from numpy.typing import NDArray
 
-# Relationship between beam FWHM and std.
-SIGMA_TO_FWHM = 2.0 * np.sqrt(2.0 * np.log(2))
-FWHM_TO_SIGMA = 1.0 / SIGMA_TO_FWHM
+from .constants import DEG_TO_ARCSEC, FWHM_TO_SIGMA
 
-# Relationship between degrees and arcseconds.
-DEG_TO_ARCSEC = 3600
-
-# Number of channels to calculate RMS.
+# Number of channels to calculate RMS
 DEFAULT_NCHANNELS_NOISE = 5
 
 

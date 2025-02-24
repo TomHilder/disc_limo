@@ -9,12 +9,12 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .fit_channels import Setup
 
+from timeit import default_timer as timer
+
 import numpy as np
 import pylops as pl
 from numpy.typing import NDArray
-from scipy.linalg import lu
-
-from .dtype import FLOAT_DTYPE
+from scipy.sparse.linalg import cg
 
 # TODO: MAJOR changes. Solve with lin ops and CG. We also need a preconditioner.
 #       Very importantly, we will no longer have Cinv AT ALL!
@@ -29,6 +29,17 @@ def solve(A: NDArray[np.float64], Y: NDArray[np.float64]) -> NDArray[np.float64]
     """Solve AX=Y using least squares, wrapper of numpy"""
     result, _, _, _ = np.linalg.lstsq(A, Y, rcond=RCOND)
     return result
+
+
+def solve_linops(
+    A: pl.LinearOperator,
+    Y: NDArray[np.float64],
+    M: pl.LinearOperator = None,
+) -> NDArray[np.float64]:
+    t_solve = -timer()
+    X, info = cg(A, Y, M=M)
+    t_solve += timer()
+    return X, info, t_solve
 
 
 # NOTE: I think we don't even want this anymore? Composing linear operators is so fast
