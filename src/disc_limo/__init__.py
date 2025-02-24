@@ -13,5 +13,5 @@ __version__ = "0.0.0"
 from .cube_from_weights import convert_weights_to_channels
 from .fit_cube import fit_cube
 from .fit_lines import fit_gaussians
+from .results_io import load_fit
 from .sampling import get_posterior_samples
-from .setup import load_setup

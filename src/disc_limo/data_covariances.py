@@ -16,8 +16,9 @@ def C_operator(
     approx: bool = False,
 ) -> pl.LinearOperator:
     if approx:
-        return rms**2 * pl.Identity(n_x * n_y)
+        I = pl.Identity(n_x * n_y)
+        return rms**2 * I, rms**-2 * I
     # Beam convolution sets the correlation
     H = H_operator(n_x, n_y, kernel_array)
     # Get covariances
-    return rms**2 * H * (1 / kernel_array.max())
+    return rms**2 * H * (1 / kernel_array.max()), None

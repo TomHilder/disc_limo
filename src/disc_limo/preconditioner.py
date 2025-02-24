@@ -32,15 +32,12 @@ def block_jacobi_preconditioner(
         m = len(indices)
         # Build the block by computing columns using the operator's matvec
         block = np.zeros((m, m))
-        t_solve = -timer()
         for j, col in enumerate(indices):
             # Column extracted via matvec on corresponding unit vector ξ
             ξ = np.zeros(n)
             ξ[col] = 1.0
             col_full = op.matvec(ξ)
             block[:, j] = col_full[indices]
-        t_solve += timer()
-        print(t_solve)
         # Invert the block and store
         inv_block = np.linalg.inv(block)
         blocks.append(inv_block)

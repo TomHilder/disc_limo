@@ -1,55 +1,68 @@
-# fit_channels.py
+# fit_cube.py
 # Thomas Hilder
+
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pylops as pl
+from astropy.io.fits.header import Header
 from numpy.typing import NDArray
 from tqdm import tqdm
 
-from .cube_io import read_cube, upsampled_beam
-from .linear_solve import train_feature_weighted_gls
+from .cube_io import read_cube
+from .linear_solve import linear_solve
 from .preconditioner import M_operator
-from .regularisation import Λ_operator
+from .results_io import save_all
 from .setup import Setup, setup_fit
 
-# TODO: replace with functions that make linear operators if need be
-#       fix variable names (use greek letters)
-
-
-BLOCKSIZE_MULT = 4
+BLOCKSIZE_MULT = 2
 
 
 def fit_many_channels(
     image: NDArray[np.float64],
     channel_indicies: NDArray[np.int64],
     fit_info: Setup,
-) -> NDArray[np.float64]:
-    weight_vectors = []
+    precon: pl.LinearOperator,
+) -> tuple[NDArray[np.float64], dict]:
+    X_vals = []
+    info_vals = []
+    t_vals = []
     # Fit for each specified channel and append results
-    for i in tqdm(channel_indicies):
-        weight_vector = train_feature_weighted_gls(
-            data_vector=image[i, :, :].flatten().T, fit_info=fit_info
-        )
-        weight_vectors.append(weight_vector)
-    return np.array(weight_vectors)
+    # TODO: pass initial guess from previous channel
+    for j in tqdm(channel_indicies):
+        # Solve this channel
+        Y = image[j, :, :].flatten().T
+        X, i, t = linear_solve(fit_info, Y, precon)
+        # Save outputs
+        X_vals.append(X)
+        info_vals.append(i)
+        t_vals.append(t)
+    # Convert to arrays and dict for meta
+    X_results = np.array(X_vals)
+    meta = {
+        "info": info_vals,
+        "t_solves": t_vals,
+    }
+    return X_results, meta
 
 
 def fit_cube(
-    results_name: str,
     filename: str,
     n_pix: int,
     n_fourier: int,
     weighting_width_inverse: float,
     lambda_coefficient: float,
+    save: Optional[str] = None,
     approximate_data_cov: bool = False,
     plotting: bool = False,
-) -> None:
+) -> tuple[NDArray, Setup, dict, Header]:
     """
     TODO: Docstring! This function is user-accessible!
     """
 
     # Read the cube
-    image, _, beam, rms, n_x, n_y, n_channels = read_cube(filename, n_pix)
+    image, header, beam, rms, n_x, n_y, n_channels = read_cube(filename, n_pix)
     # Plots if requested
     if plotting:
         plt.imshow(beam.array)
@@ -61,7 +74,7 @@ def fit_cube(
     fit_info = setup_fit(
         n_x=n_x,
         n_y=n_y,
-        beam_kernel=beam,
+        beam_kernel_array=beam.array,
         rms=rms,
         n_fourier_x=n_fourier,
         n_fourier_y=n_fourier,
@@ -73,14 +86,25 @@ def fit_cube(
     if approximate_data_cov:
         M = None
     else:
-        print("Bulding a preconditioner:")
-        M = M_operator(fit_info, block_size=BLOCKSIZE_MULT * n_x)
+        block_size = BLOCKSIZE_MULT * n_x
+        print(f"Bulding a preconditioner:")
+        M = M_operator(fit_info, block_size=block_size)
 
-    # # Fit all channels
-    # print("Calculating posterior means of Fourier weights for each channel:")
-    # weights_vectors = fit_many_channels(image, np.arange(n_channels), fit_info)
-    # print("Fit complete!")
-    # return weights_vectors, fit_info.weights_covariances
+    # Fit all channels
+    print("Fitting each channel:")
+    results, meta = fit_many_channels(image, np.arange(n_channels), fit_info, M)
+
+    # Save results if requested
+    if save is not None:
+        save_all(
+            filename_base=save,
+            results=results,
+            setup=fit_info,
+            meta=meta,
+            fitsheader=header,
+        )
+    # And return too
+    return results, fit_info, meta, header
 
 
 # def get_design_matrices(
