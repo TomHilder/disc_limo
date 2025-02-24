@@ -5,7 +5,7 @@ import numpy as np
 import pylops as pl
 from numpy.typing import NDArray
 
-from .convolution_matrix import H_operator
+from .convolution import H_operator
 
 
 def C_operator(

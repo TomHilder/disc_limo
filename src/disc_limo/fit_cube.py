@@ -1,9 +1,6 @@
 # fit_channels.py
 # Thomas Hilder
 
-from tarfile import BLOCKSIZE
-from typing import Optional
-
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray

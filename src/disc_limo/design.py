@@ -7,7 +7,7 @@ import pylops as pl
 from nifty_solve import Finufft2DRealOperator
 from numpy.typing import NDArray
 
-from disc_limo.convolution_matrix import H_operator
+from disc_limo.convolution import H_operator
 
 from .constants import FINUFFT_TOL, π
 from .dtype import FLOAT_DTYPE

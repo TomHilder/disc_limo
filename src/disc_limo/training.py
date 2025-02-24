@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .fit_channels import Setup
+    from .fit_cube import Setup
 
 from timeit import default_timer as timer
 

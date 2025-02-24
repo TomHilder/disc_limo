@@ -7,7 +7,7 @@ from collections import namedtuple
 from astropy.convolution import Gaussian2DKernel
 
 from .data_covariances import C_operator
-from .design_matrices import design_operators
+from .design import design_operators
 
 # Named tuple for operators, frequencies vector and hyperparameters
 Setup = namedtuple("Setup", ["A", "F", "H", "C", "λ", "ω", "s"])

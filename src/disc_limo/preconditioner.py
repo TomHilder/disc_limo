@@ -11,7 +11,7 @@ import pylops as pl
 from tqdm import tqdm
 
 if TYPE_CHECKING:
-    from .fit_channels import Setup
+    from .fit_cube import Setup
 
 from .constants import N_THREADS
 from .regularisation import Λ_operator
