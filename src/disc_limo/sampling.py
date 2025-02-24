@@ -1,4 +1,4 @@
-# sample_posterior.py
+# sampling.py
 # Thomas Hilder
 
 from typing import Any, Optional

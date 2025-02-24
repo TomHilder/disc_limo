@@ -7,10 +7,10 @@ from numpy.typing import NDArray
 from tqdm import tqdm
 
 from .cube_io import read_cube, upsampled_beam
+from .linear_solve import train_feature_weighted_gls
 from .preconditioner import M_operator
 from .regularisation import Λ_operator
 from .setup import Setup, setup_fit
-from .training import train_feature_weighted_gls
 
 # TODO: replace with functions that make linear operators if need be
 #       fix variable names (use greek letters)

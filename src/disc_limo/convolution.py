@@ -1,4 +1,4 @@
-# convolution_matrix.py
+# convolution.py
 # Thomas Hilder
 
 import pylops as pl

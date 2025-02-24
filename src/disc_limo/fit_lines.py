@@ -1,6 +1,8 @@
 # fit_lines.py
 # Thomas Hilder
 
+from typing import Any, Callable
+
 import numpy as np
 from numpy.typing import NDArray
 from scipy.optimize import minimize
@@ -20,16 +22,16 @@ def gaussian(
     b: float,
     c: float,
 ) -> NDArray:
-    return a * np.exp(-0.5 * (x - b) ** 2 * c**-2)
+    return np.asarray(a * np.exp(-0.5 * (x - b) ** 2 * c**-2))
 
 
 def neg_ln_likelihood_obj_func(
     theta: tuple,
     x: NDArray,
     y: NDArray,
-    f: callable,
+    f: Callable,
 ) -> float:
-    return 0.5 * np.sum((y - f(x, *theta)) ** 2)
+    return 0.5 * float(np.sum((y - f(x, *theta)) ** 2))
 
 
 def fit_gaussian(x, y, inits=None):

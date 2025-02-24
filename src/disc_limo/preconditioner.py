@@ -1,20 +1,16 @@
 # preconditioner.py
 # Thomas Hilder
 
-from __future__ import annotations
-
 from timeit import default_timer as timer
-from typing import TYPE_CHECKING, Callable
+from typing import Callable
 
 import numpy as np
 import pylops as pl
 from tqdm import tqdm
 
-if TYPE_CHECKING:
-    from .fit_cube import Setup
-
 from .constants import N_THREADS
 from .regularisation import Λ_operator
+from .setup import Setup
 
 
 def block_jacobi_preconditioner(

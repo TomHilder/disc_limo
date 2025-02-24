@@ -1,6 +1,5 @@
-# design_matrices.py
-# Thomas Hilder, adapted from code by Hogg & Villar (2021) available at
-# https://arxiv.org/abs/2101.07256
+# design.py
+# Thomas Hilder
 
 import numpy as np
 import pylops as pl

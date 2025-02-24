@@ -1,13 +1,5 @@
-# training.py
-# Thomas Hilder, adapted from code by Hogg & Villar (2021) available at
-# https://arxiv.org/abs/2101.07256
-
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from .fit_cube import Setup
+# linear_solve.py
+# Thomas Hilder
 
 from timeit import default_timer as timer
 
@@ -15,6 +7,8 @@ import numpy as np
 import pylops as pl
 from numpy.typing import NDArray
 from scipy.sparse.linalg import cg
+
+from .setup import Setup
 
 # TODO: MAJOR changes. Solve with lin ops and CG. We also need a preconditioner.
 #       Very importantly, we will no longer have Cinv AT ALL!
