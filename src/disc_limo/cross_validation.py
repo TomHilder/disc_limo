@@ -41,6 +41,8 @@ def loo_indices(
     n_y: int,
     n_loo: int,
     r_loo_pix: float,
+    Y: NDArray,
+    rms: float,
     rng: Generator,
 ) -> tuple[list[NDArray], list[list[float]]]:
     # Check that n_loo isn't too large
@@ -48,24 +50,22 @@ def loo_indices(
         raise ValueError("n_loo cannot exceed total number of pixels in images.")
     # Randomly sample some locations
     t_x, t_y = get_image_coords(n_x, n_y)
-    loo_centre_inds = rng.choice(a=t_x.shape[0], size=n_loo, replace=False)
+    loo_centre_inds = np.arange(t_x.shape[0])
+    rng.shuffle(loo_centre_inds)
     # Convert loo radius to t coordinates
     r_loo_t = r_loo_pix * (t_x[1] - t_x[0])
     # Loop over centre indices to get all loo inds
-    hold_inds = []
-    loo_coords = []
-    # t_ys = [-0.25 * π, 0.25 * π, 0]
-    # j = 0
-    for i_centre in loo_centre_inds:
-        t_x_i = t_x[i_centre]
-        t_y_i = t_y[i_centre]
-        # t_x_i = 0
-        # t_y_i = t_ys[j]
-        # j += 1
-        loo_coords.append([t_x_i, t_y_i])
-        hold_inds.append(get_holdout_indices(t_x_i, t_y_i, r_loo_t, t_x, t_y))
-        plt.scatter(t_x_i, t_y_i, c="k")
-    plt.show()
+    hold_inds: list[NDArray] = []
+    loo_coords: list[list[float]] = []
+    i = 0
+    while len(hold_inds) < n_loo:
+        i_centre = loo_centre_inds[i]
+        if Y[i_centre] > 3 * rms:
+            t_x_i = t_x[i_centre]
+            t_y_i = t_y[i_centre]
+            loo_coords.append([t_x_i, t_y_i])
+            hold_inds.append(get_holdout_indices(t_x_i, t_y_i, r_loo_t, t_x, t_y))
+        i += 1
     return hold_inds, loo_coords
 
 
@@ -89,7 +89,7 @@ def perform_cv(
     rng = default_rng(seed)
 
     # Read the cube
-    image, header, beam, rms, n_x, n_y, n_channels = read_cube(filename, n_pix)
+    image, header, beam, rms, n_x, n_y, _ = read_cube(filename, n_pix)
 
     # Info that is fixed across hyperparameter combos
     fit_info_all_hyperparam = dict(
@@ -108,7 +108,7 @@ def perform_cv(
 
     # We pick the LOO locations and find indices to exclude
     r_loo_pix = r_loo * beam._model.x_stddev.value
-    loo_inds, loo_coords = loo_indices(n_x, n_y, n_loo, r_loo_pix, rng)
+    loo_inds, loo_coords = loo_indices(n_x, n_y, n_loo, r_loo_pix, Y, rms, rng)
 
     # Empty arrays to store our results
     n_s = len(s_vals)

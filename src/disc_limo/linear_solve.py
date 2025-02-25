@@ -68,6 +68,7 @@ def solve_woodbury(
         A = R @ setup.A
         C = R @ setup.C @ R.H
         Y = R @ Y
+        M = R @ M @ R.H
     else:
         A = setup.A
         C = setup.C
