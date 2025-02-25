@@ -11,9 +11,18 @@ from disc_limo.convolution import H_operator
 from .constants import FINUFFT_TOL, π
 from .dtype import FLOAT_DTYPE
 
+# Data point coordinates are between -0.5π and 0.5π
+T_MIN = -0.5 * π
+T_MAX = 0.5 * π
+
 
 def get_data_points(n: int) -> NDArray[np.float64]:
-    return np.linspace(-0.5 * π, 0.5 * π, n, dtype=FLOAT_DTYPE)
+    return np.linspace(T_MIN, T_MAX, n, dtype=FLOAT_DTYPE)
+
+
+def get_image_coords(n_x: int, n_y: int) -> tuple[NDArray, ...]:
+    t_x, t_y = (get_data_points(n) for n in [n_x, n_y])
+    return tuple(t.flatten() for t in np.meshgrid(t_x, t_y))
 
 
 def F_operator(
@@ -27,8 +36,7 @@ def F_operator(
     as a backend, with operator implemented in nifty-solve.
     """
     # Image coordinates
-    t_x, t_y = (get_data_points(n) for n in [n_x, n_y])
-    t_x, t_y = [t.flatten() for t in np.meshgrid(t_x, t_y)]
+    t_x, t_y = get_image_coords(n_x, n_y)
     # Build operator
     F = Finufft2DRealOperator(
         x=t_x,

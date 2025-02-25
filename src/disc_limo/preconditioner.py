@@ -1,7 +1,6 @@
 # preconditioner.py
 # Thomas Hilder
 
-from timeit import default_timer as timer
 from typing import Callable
 
 import numpy as np
@@ -27,7 +26,9 @@ def block_jacobi_preconditioner(
     # Store the blocks in a list
     blocks = []
     # Partition the indices into blocks
-    for start in tqdm(range(0, n, block_size)):
+    for start in tqdm(
+        range(0, n, block_size), leave=None, desc="building preconditioner"
+    ):
         indices = np.arange(start, min(n, start + block_size))
         m = len(indices)
         # Build the block by computing columns using the operator's matvec

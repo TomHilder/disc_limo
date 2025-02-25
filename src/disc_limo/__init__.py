@@ -11,6 +11,7 @@ __version__ = "0.0.0"
 
 # User accessible classses and functions go here
 from .cube_from_weights import convert_weights_to_channels
+from .cross_validation import perform_cv
 from .fit_cube import fit_cube
 from .fit_lines import fit_gaussians
 from .results_io import load_fit

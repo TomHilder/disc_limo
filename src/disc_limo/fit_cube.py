@@ -29,8 +29,7 @@ def fit_many_channels(
     info_vals = []
     t_vals = []
     # Fit for each specified channel and append results
-    # TODO: pass initial guess from previous channel
-    for j in tqdm(channel_indicies):
+    for j in tqdm(channel_indicies, desc="fitting channels"):
         # Solve this channel
         Y = image[j, :, :].flatten().T
         X, i, t = linear_solve(fit_info, Y, precon)
@@ -87,11 +86,11 @@ def fit_cube(
         M = None
     else:
         block_size = BLOCKSIZE_MULT * n_x
-        print(f"Bulding a preconditioner:")
+        # print(f"Bulding a preconditioner:")
         M = M_operator(fit_info, block_size=block_size)
 
     # Fit all channels
-    print("Fitting each channel:")
+    # print("Fitting each channel:")
     results, meta = fit_many_channels(image, np.arange(n_channels), fit_info, M)
 
     # Save results if requested
@@ -104,6 +103,7 @@ def fit_cube(
             fitsheader=header,
         )
     # And return too
+    print("done!")
     return results, fit_info, meta, header
 
 
