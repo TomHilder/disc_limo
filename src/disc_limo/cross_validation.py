@@ -4,7 +4,6 @@
 from functools import partial
 from typing import Optional
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pylops as pl
 from numpy.random import Generator, default_rng

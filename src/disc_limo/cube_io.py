@@ -91,3 +91,22 @@ def estimate_rms(
             )
         )
     )
+
+
+# def estimate_rms(
+#     image: NDArray[np.float64], nchannels: int = DEFAULT_NCHANNELS_NOISE
+# ) -> float:
+#     """
+#     Estimate the RMS noise of the cube from the first and last 5 channels by default.
+#     """
+#     # Estimate RMS using standard deviation of channels far from systemic velocity
+#     return float(
+#         np.nanstd(
+#             a=np.concatenate(
+#                 [
+#                     image[:nchannels, :, -1],
+#                     image[-nchannels:, :, -1],
+#                 ]
+#             )
+#         )
+#     )

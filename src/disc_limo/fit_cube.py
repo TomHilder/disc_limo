@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from .cube_io import read_cube
 from .linear_solve import linear_solve
+from .precision import dense_precision
 from .preconditioner import M_operator
 from .results_io import save_all
 from .setup import Setup, setup_fit
@@ -52,9 +53,11 @@ def fit_cube(
     n_fourier: int,
     weighting_width_inverse: float,
     lambda_coefficient: float,
+    get_dense_precision: bool = False,
     save: Optional[str] = None,
     approximate_data_cov: bool = False,
     plotting: bool = False,
+    channel_inds: Optional[list[int]] = None,
 ) -> tuple[NDArray, Setup, dict, Header]:
     """
     TODO: Docstring! This function is user-accessible!
@@ -83,6 +86,7 @@ def fit_cube(
     )
     # Calculate a preconditioner for solves with full covariance matrix
     if approximate_data_cov:
+        # if True:
         M = None
     else:
         block_size = BLOCKSIZE_MULT * n_x
@@ -90,10 +94,15 @@ def fit_cube(
         M = M_operator(fit_info, block_size=block_size)
 
     # Fit all channels
-    # print("Fitting each channel:")
-    results, meta = fit_many_channels(image, np.arange(n_channels), fit_info, M)
+    if channel_inds is None:
+        channel_inds = np.arange(n_channels)
+    results, meta = fit_many_channels(image, channel_inds, fit_info, M)
+    # Get dense precision matrix
+    if get_dense_precision:
+        Ω = dense_precision(fit_info)
+        np.save(save + "precision.npy", Ω)
 
-    # Save results if requested
+    # Save results
     if save is not None:
         save_all(
             filename_base=save,

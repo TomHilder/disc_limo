@@ -1,7 +1,6 @@
 # data_covariances.py
 # Thomas Hilder
 
-import numpy as np
 import pylops as pl
 from numpy.typing import NDArray
 

@@ -4,39 +4,58 @@
 from typing import Any, Optional
 
 import numpy as np
-from numpy.linalg import LinAlgError, cholesky, eigh
+from numpy.linalg import LinAlgError, eigh
 from numpy.typing import NDArray
-from scipy.linalg import issymmetric
+from scipy.linalg import cholesky, issymmetric
 from tqdm import tqdm
 
 # TODO: decompose instead the *precision* matrix, probably using Cholesky. Then we will
 #       draw samples with linear solves using the Cholesky factor from the precision mat
 
 
-def decompose_covariance_matrix(Sigma: NDArray[np.float64]) -> NDArray[np.float64]:
+# def decompose_covariance_matrix(Sigma: NDArray[np.float64]) -> NDArray[np.float64]:
+#     """
+#     Decompose the covariance matrix as Sigma = A @ A.T since we can use A to sample from
+#     the multivariate normal defined by Sigma easily.
+#     """
+#     # Sigma should be symmetric but may not be due to numerical error
+#     if not issymmetric(Sigma):
+#         Sigma = 0.5 * (Sigma + Sigma.T)
+#     # If the matrix is positive definite then Cholesky is cheapest and gives A directly
+#     # since Sigma is real so Sigma = A @ A.conj().T = A @ A.T
+#     try:
+#         return cholesky(Sigma)
+#     # If the matrix is only positive semi-definite then Cholesky will raise Exception
+#     except LinAlgError:
+#         # In this case we do a Eigendecomposition Sigma = Q @ Lambda @ Q^-1 but since
+#         # Sigma is real and symmetric Q^-1 = Q.T. Thus we can set A = Q @ Lambda^1/2
+#         eigenvalues, Q = eigh(Sigma)
+#         Lambda_half = Q @ np.diag(np.sqrt(eigenvalues))
+#         return np.asarray(Q @ Lambda_half, np.float64)
+
+
+def decompose_dense_precision(Ω: NDArray[np.float64]) -> NDArray[np.float64]:
     """
-    Decompose the covariance matrix as Sigma = A @ A.T since we can use A to sample from
-    the multivariate normal defined by Sigma easily.
+    Decompose the precision matrix as Ω = L @ L.T
     """
     # Sigma should be symmetric but may not be due to numerical error
-    if not issymmetric(Sigma):
-        Sigma = 0.5 * (Sigma + Sigma.T)
-    # If the matrix is positive definite then Cholesky is cheapest and gives A directly
-    # since Sigma is real so Sigma = A @ A.conj().T = A @ A.T
+    if not issymmetric(Ω):
+        Ω = 0.5 * (Ω + Ω.T)
+    # If the matrix is positive definite then Cholesky is cheapest and gives L directly
     try:
-        return cholesky(Sigma)
+        return cholesky(Ω)
     # If the matrix is only positive semi-definite then Cholesky will raise Exception
     except LinAlgError:
-        # In this case we do a Eigendecomposition Sigma = Q @ Lambda @ Q^-1 but since
-        # Sigma is real and symmetric Q^-1 = Q.T. Thus we can set A = Q @ Lambda^1/2
-        eigenvalues, Q = eigh(Sigma)
-        Lambda_half = Q @ np.diag(np.sqrt(eigenvalues))
-        return np.asarray(Q @ Lambda_half, np.float64)
+        # In this case we do a Eigendecomposition Ω = Q @ Λ @ Q^-1 but since
+        # Ω is real and symmetric Q^-1 = Q.T. Thus we can set L = Q @ Λ^1/2
+        eigenvalues, Q = eigh(Ω)
+        Λ_half = Q @ np.diag(np.sqrt(eigenvalues))
+        return np.asarray(Q @ Λ_half, np.float64)
 
 
 def get_posterior_samples(
     weights_vectors: NDArray[np.float64],
-    weights_covariances: NDArray[np.float64],
+    precision_matrix: NDArray[np.float64],
     n_samples: int,
     seed: Optional[Any] = None,
 ) -> NDArray[np.float64]:
@@ -45,7 +64,7 @@ def get_posterior_samples(
     """
     rng = np.random.default_rng(seed)
     # Get Covariance matrix decomposition since it is the same for all channels
-    L = decompose_covariance_matrix(weights_covariances)
+    L = decompose_dense_precision(precision_matrix)
     # Iterate to create sample cubes, could probably be parallelised but it's pretty
     # fast anyway
     samples = []
